@@ -1,0 +1,6 @@
+*.o
+*.prefs
+Debug
+libraries/CMSIS/Documentation
+
+*.lib
