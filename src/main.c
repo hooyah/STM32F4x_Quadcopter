@@ -234,25 +234,38 @@ float yawRate;
 float longitudinalAccel;
 float lateralAccel;
 float verticalAccel;
+// test
+float gyro_drift_pitch=0, gyro_drift_roll=0, gyro_drift_yaw=0;
 
 void update_sensorFusion(float dt)
 {
 	//	  float oneG = fabs(acc0.z);
 	  float oneG = sqrt(acc0.x*acc0.x+acc0.y*acc0.y+acc0.z*acc0.z);
 
-	  rollRate  = radians( (float)(gyr.x - gyr0.x) / 32.8f );
-	  pitchRate = radians( (float)(gyr.y - gyr0.y) / 32.8f );
+	  rollRate  = radians( (float)(gyr.x - gyr0.x) / 32.8f ) - gyro_drift_roll;
+	  pitchRate = radians( (float)(gyr.y - gyr0.y) / 32.8f ) - gyro_drift_pitch;
 	  yawRate   = radians( (float)(gyr.z - gyr0.z) / 32.8f );
 	  longitudinalAccel = (float)(acc.x - acc0.x) / oneG;
 	  lateralAccel 	  = (float)(acc.y - acc0.y) / oneG;
 	  verticalAccel	  = (float)(acc.z) / oneG;
-	  oneG = 1.0;
+	  //oneG = 1.0;
 	  float magX = 0;
 	  float magY = 0;
 
+
+	  // test: high pass filter for the gyro
+	  float macc = sqrt(acc.x*acc.x+acc.y*acc.y+acc.z*acc.z) / oneG;
+	  if(macc > 0.8 && macc < 1.2) // reasonably quite
+	  {
+		  const float f = 0.9999f, i_f = 1.0f - f;
+		  gyro_drift_pitch = gyro_drift_pitch * f + pitchRate * i_f;
+		  gyro_drift_roll  = gyro_drift_roll * f + rollRate * i_f;
+	  }
+
+
 	  calculateKinematics( rollRate,             pitchRate,       yawRate,
 	                       longitudinalAccel,    lateralAccel,    verticalAccel,
-	                       oneG,                 magX,            magY,
+	                       /*oneG*/1.0f,         magX,            magY,
 	  				       dt);
 }
 
@@ -311,6 +324,7 @@ void wait_for_throttle_cut()
 
 
 int8_t lastFlightMode = 0, absolute_override = 0;
+int8_t printFloat_doodledoo(float number, uint8_t numDecimals);
 
 int main(void)
 {
@@ -380,8 +394,9 @@ const uint loop_period = 1000000 / 500; // in us (400 Hz update)
 					absolute_override = 0;
 			}
 		}
-		if(absolute_override)
-			flightMode = FM_ABSOLUTE;
+
+		//if(absolute_override)
+		//	flightMode = FM_ABSOLUTE;
 
 		if(lastFlightMode != flightMode) {// toggle
 			if(flightMode==FM_ABSOLUTE)
@@ -406,10 +421,18 @@ const uint loop_period = 1000000 / 500; // in us (400 Hz update)
 
 		if(rx_thrust < 10)
 		{
-			terminal(flightMode);
+			terminal(rx_gear > 50 ? 1:0);
 		}
 
-    
+#if 0
+		if(count%128==0) {
+			printf("gyr: %d, %d\r\n", gyr.x-gyr0.x, gyr.y-gyr0.y);
+			printFloat_doodledoo(gyro_drift_pitch, 6);
+			printf("  ");
+			printFloat_doodledoo(gyro_drift_roll, 6);
+			printf("\r\n");
+		}
+#endif
     count++;
   }
 }

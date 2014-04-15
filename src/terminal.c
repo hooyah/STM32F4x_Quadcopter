@@ -279,6 +279,7 @@ void print_params(uint8_t mode)
 	uint8_t num = sizeof(parameters)/ sizeof(TParam);
 
 	printf("\r\nminimaBL 1.0 flight control parameters\r\n");
+	printf("flight mode: %s\r\n", mode?"relative":"absolute");
 	for(uint8_t i = 0; i < num; ++i) {
 
 		int16_t len = strlen(parameters[i].name);
